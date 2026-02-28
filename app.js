@@ -1,11 +1,10 @@
-// RezCafe Sunday Assignments — Step 1 MVP
-// - Fixed crew list
-// - Choose a Sunday (past + future)
-// - Assign crew via checkboxes
-// - Persists in localStorage
+// RezCafe Sunday Assignments — 9 Sundays at once
+// 4 previous Sundays • upcoming Sunday • 4 future Sundays
+// Persisted in localStorage
 
-const STORAGE_KEY = "rezcafe_sunday_assignments_v1";
+const STORAGE_KEY = "rezcafe_sunday_assignments_v2";
 
+// Fixed crew list (your list)
 const CREW = [
   "Debbie C",
   "RJ B",
@@ -16,9 +15,14 @@ const CREW = [
   "Robb R."
 ];
 
-const sundaySelect = document.getElementById("sundaySelect");
-const crewList = document.getElementById("crewList");
-const clearBtn = document.getElementById("clearSunday");
+const els = {
+  grid: document.getElementById("grid"),
+  rangeLabel: document.getElementById("rangeLabel"),
+  btnPrev: document.getElementById("btnPrev"),
+  btnToday: document.getElementById("btnToday"),
+  btnNext: document.getElementById("btnNext"),
+  btnClearAll: document.getElementById("btnClearAll"),
+};
 
 function toISODateLocal(d) {
   const y = d.getFullYear();
@@ -26,21 +30,35 @@ function toISODateLocal(d) {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
-
 function parseISODateLocal(iso) {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
-
-function nearestSunday(today = new Date()) {
-  const d = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  d.setDate(d.getDate() - d.getDay()); // 0=Sun
-  return d;
+function addDays(d, days) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + days);
+  return x;
 }
-
-function formatSunday(iso) {
+function formatSundayShort(iso) {
+  const d = parseISODateLocal(iso);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+function formatSundayLong(iso) {
   const d = parseISODateLocal(iso);
   return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+}
+function isSunday(d) {
+  return d.getDay() === 0;
+}
+
+// Upcoming Sunday = next Sunday from today.
+// If today is Sunday, "upcoming" is today.
+function upcomingSunday(today = new Date()) {
+  const d = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const day = d.getDay(); // 0=Sun
+  const daysUntilSunday = (7 - day) % 7; // 0 if Sunday
+  const up = addDays(d, daysUntilSunday);
+  return up;
 }
 
 function loadState() {
@@ -56,63 +74,81 @@ function loadState() {
     return { assignmentsBySunday: {} };
   }
 }
-
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 let state = loadState();
 
-// Build a simple Sunday list: 12 past Sundays + current + 20 future
-function buildSundays() {
-  const base = nearestSunday(new Date());
-  const sundays = [];
-  for (let i = -12; i <= 20; i++) {
-    const d = new Date(base);
-    d.setDate(d.getDate() + i * 7);
-    sundays.push(toISODateLocal(d));
+// Window center (upcoming Sunday ISO)
+let centerSundayISO = toISODateLocal(upcomingSunday(new Date()));
+
+function buildWindow(centerIso) {
+  const center = parseISODateLocal(centerIso);
+  if (!isSunday(center)) {
+    // safety: force to upcoming Sunday if bad input
+    centerSundayISO = toISODateLocal(upcomingSunday(new Date()));
   }
-  return sundays;
-}
-
-const SUNDAYS = buildSundays();
-
-function renderSundaySelect() {
-  sundaySelect.innerHTML = SUNDAYS
-    .map(iso => `<option value="${iso}">${formatSunday(iso)}</option>`)
-    .join("");
-
-  // default to current Sunday
-  const current = toISODateLocal(nearestSunday(new Date()));
-  sundaySelect.value = current;
+  const list = [];
+  for (let i = -4; i <= 4; i++) {
+    const d = addDays(parseISODateLocal(centerIso), i * 7);
+    list.push(toISODateLocal(d));
+  }
+  return list;
 }
 
 function getAssignedSet(iso) {
   const arr = state.assignmentsBySunday[iso] || [];
   return new Set(arr);
 }
-
 function setAssignedSet(iso, set) {
   state.assignmentsBySunday[iso] = Array.from(set);
   saveState();
 }
 
-function renderCrew() {
-  const iso = sundaySelect.value;
-  const assigned = getAssignedSet(iso);
+function render() {
+  const sundays = buildWindow(centerSundayISO);
+  const upcomingIso = centerSundayISO;
 
-  crewList.innerHTML = CREW.map(name => {
-    const checked = assigned.has(name) ? "checked" : "";
+  els.rangeLabel.textContent =
+    `${formatSundayLong(sundays[0])}  →  ${formatSundayLong(sundays[sundays.length - 1])} (center: ${formatSundayLong(upcomingIso)})`;
+
+  // Build table HTML
+  const thead = `
+    <thead>
+      <tr>
+        <th style="text-align:left;min-width:180px;">Volunteer</th>
+        ${sundays.map(iso => {
+          const cls = iso === upcomingIso ? "upcoming" : "";
+          return `<th class="${cls}">${formatSundayShort(iso)}<div style="font-weight:600;color:rgba(230,237,243,.85);margin-top:2px;">${iso === upcomingIso ? "upcoming" : ""}</div></th>`;
+        }).join("")}
+      </tr>
+    </thead>
+  `;
+
+  const tbodyRows = CREW.map(name => {
+    const cells = sundays.map(iso => {
+      const assigned = getAssignedSet(iso);
+      const checked = assigned.has(name) ? "checked" : "";
+      return `
+        <td class="cell">
+          <input type="checkbox"
+                 data-iso="${iso}"
+                 data-name="${escapeHtml(name)}"
+                 ${checked} />
+        </td>
+      `;
+    }).join("");
+
     return `
-      <div class="crew-item">
-        <label>
-          <input type="checkbox" data-name="${escapeHtml(name)}" ${checked} />
-          <span>${escapeHtml(name)}</span>
-        </label>
-        <span></span>
-      </div>
+      <tr>
+        <td class="name">${escapeHtml(name)}</td>
+        ${cells}
+      </tr>
     `;
   }).join("");
+
+  els.grid.innerHTML = thead + `<tbody>${tbodyRows}</tbody>`;
 }
 
 function escapeHtml(str) {
@@ -125,35 +161,46 @@ function escapeHtml(str) {
 }
 
 // Events
-sundaySelect.addEventListener("change", () => {
-  renderCrew();
-});
-
-crewList.addEventListener("change", (e) => {
+els.grid.addEventListener("change", (e) => {
   const cb = e.target;
   if (!(cb instanceof HTMLInputElement) || cb.type !== "checkbox") return;
 
-  const iso = sundaySelect.value;
+  const iso = cb.getAttribute("data-iso");
   const name = cb.getAttribute("data-name");
-  if (!name) return;
+  if (!iso || !name) return;
 
-  const assigned = getAssignedSet(iso);
-  if (cb.checked) assigned.add(name);
-  else assigned.delete(name);
+  const set = getAssignedSet(iso);
+  if (cb.checked) set.add(name);
+  else set.delete(name);
 
-  setAssignedSet(iso, assigned);
+  setAssignedSet(iso, set);
 });
 
-clearBtn.addEventListener("click", () => {
-  const iso = sundaySelect.value;
-  const ok = confirm(`Clear assignments for ${formatSunday(iso)}?`);
-  if (!ok) return;
+els.btnPrev.addEventListener("click", () => {
+  // shift window back 1 week (center moves back)
+  const c = parseISODateLocal(centerSundayISO);
+  centerSundayISO = toISODateLocal(addDays(c, -7));
+  render();
+});
 
-  state.assignmentsBySunday[iso] = [];
+els.btnNext.addEventListener("click", () => {
+  const c = parseISODateLocal(centerSundayISO);
+  centerSundayISO = toISODateLocal(addDays(c, 7));
+  render();
+});
+
+els.btnToday.addEventListener("click", () => {
+  centerSundayISO = toISODateLocal(upcomingSunday(new Date()));
+  render();
+});
+
+els.btnClearAll.addEventListener("click", () => {
+  const ok = confirm("Clear ALL assignments for ALL Sundays in this browser?");
+  if (!ok) return;
+  state.assignmentsBySunday = {};
   saveState();
-  renderCrew();
+  render();
 });
 
 // Init
-renderSundaySelect();
-renderCrew();
+render();
