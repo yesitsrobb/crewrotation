@@ -2,94 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>RezCafe – Volunteer Tracker (MVP)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RezCafe – Sunday Assignments</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <header class="wrap header">
-    <div>
-      <h1>RezCafe Volunteer Tracker</h1>
-      <p class="sub">Names • Sundays • Weeks since last served</p>
-    </div>
-    <div class="header-actions">
-      <button id="btnExport" class="btn">Export JSON</button>
-      <label class="btn btn-secondary">
-        Import JSON
-        <input id="fileImport" type="file" accept="application/json" hidden />
-      </label>
-      <button id="btnReset" class="btn btn-danger">Reset</button>
-    </div>
-  </header>
+  <main class="wrap">
+    <h1>RezCafe – Sunday Assignments</h1>
+    <p class="sub">Pick a Sunday, then check who is assigned.</p>
 
-  <main class="wrap grid">
-    <!-- Left: Volunteers -->
     <section class="card">
-      <div class="card-head">
-        <h2>Volunteers</h2>
-      </div>
-
-      <form id="addVolunteerForm" class="row">
-        <input id="volunteerName" type="text" placeholder="Add volunteer name…" autocomplete="off" />
-        <button class="btn" type="submit">Add</button>
-      </form>
-
-      <div class="table">
-        <div class="table-row table-head">
-          <div>Name</div>
-          <div class="right">Weeks since last served</div>
-          <div class="right">Actions</div>
-        </div>
-        <div id="volunteerList" class="table-body"></div>
-      </div>
-
-      <p class="hint">
-        “Weeks since” counts Sundays from the most recent served Sunday up to the selected “Current Sunday”.
-        If someone never served, it shows “Never”.
-      </p>
-    </section>
-
-    <!-- Right: Sundays / Assignments -->
-    <section class="card">
-      <div class="card-head">
-        <h2>Sundays</h2>
-      </div>
-
-      <div class="row row-tight">
-        <label class="label">
-          Current Sunday
-          <select id="currentSunday"></select>
-        </label>
-        <label class="label">
-          Manage Sunday list
-          <div class="row row-tight">
-            <button id="btnPrevSundays" class="btn btn-secondary" type="button">+4 past</button>
-            <button id="btnNextSundays" class="btn btn-secondary" type="button">+4 future</button>
-          </div>
-        </label>
-      </div>
+      <label class="label" for="sundaySelect">Sunday</label>
+      <select id="sundaySelect"></select>
 
       <div class="divider"></div>
 
-      <div class="row row-tight">
-        <label class="label">
-          Select a Sunday
-          <select id="selectedSunday"></select>
-        </label>
-      </div>
+      <h2>Crew</h2>
+      <div id="crewList" class="crew"></div>
 
-      <div class="card-subhead">
-        <h3>Mark who served</h3>
-        <p class="sub">Check names who served on the selected Sunday.</p>
-      </div>
+      <div class="divider"></div>
 
-      <div id="servedChecklist" class="checklist"></div>
+      <button id="clearSunday" class="btn danger" type="button">Clear assignments for this Sunday</button>
+      <p class="tiny">Assignments are saved in this browser.</p>
     </section>
   </main>
-
-  <footer class="wrap footer">
-    <span class="muted">Stored locally in this browser (localStorage).</span>
-  </footer>
 
   <script src="./app.js"></script>
 </body>
