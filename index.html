@@ -8,22 +8,25 @@
 </head>
 <body>
   <main class="wrap">
-    <h1>RezCafe – Sunday Assignments</h1>
-    <p class="sub">Pick a Sunday, then check who is assigned.</p>
+    <header class="head">
+      <div>
+        <h1>RezCafe – Sunday Assignments</h1>
+        <p class="sub">9 Sundays at once (4 previous • upcoming • 4 future)</p>
+      </div>
+      <div class="actions">
+        <button id="btnPrev" class="btn secondary" type="button">← Shift window</button>
+        <button id="btnToday" class="btn" type="button">Jump to upcoming</button>
+        <button id="btnNext" class="btn secondary" type="button">Shift window →</button>
+        <button id="btnClearAll" class="btn danger" type="button">Clear all</button>
+      </div>
+    </header>
 
     <section class="card">
-      <label class="label" for="sundaySelect">Sunday</label>
-      <select id="sundaySelect"></select>
-
-      <div class="divider"></div>
-
-      <h2>Crew</h2>
-      <div id="crewList" class="crew"></div>
-
-      <div class="divider"></div>
-
-      <button id="clearSunday" class="btn danger" type="button">Clear assignments for this Sunday</button>
-      <p class="tiny">Assignments are saved in this browser.</p>
+      <div id="rangeLabel" class="range"></div>
+      <div class="table-wrap">
+        <table class="grid" id="grid"></table>
+      </div>
+      <p class="tiny">Saved in this browser (localStorage).</p>
     </section>
   </main>
 
